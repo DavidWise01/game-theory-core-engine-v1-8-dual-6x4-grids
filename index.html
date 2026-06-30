@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Game Theory Engine v1.8 — Dual 6x4 Grids</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#050711;
+  --panel:#0f172a;
+  --panel2:#172033;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --line:#2e3a55;
+  --carbon:#93c5fd;
+  --silicon:#86efac;
+  --hot:#fef08a;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(147,197,253,.18), transparent 28%),
+    radial-gradient(circle at 80% 10%, rgba(134,239,172,.16), transparent 26%),
+    linear-gradient(180deg,#080b18,var(--bg));
+  color:var(--text);
+  font-family:Inter,system-ui,Segoe UI,sans-serif;
+}
+header{
+  padding:22px;
+  border-bottom:1px solid var(--line);
+  background:rgba(5,7,17,.72);
+  position:sticky;
+  top:0;
+  z-index:5;
+  backdrop-filter:blur(14px);
+}
+h1{margin:0 0 6px;font-size:24px}
+.sub{color:var(--muted);font-size:14px}
+main{
+  display:grid;
+  grid-template-columns:340px 1fr 340px;
+  gap:16px;
+  padding:16px;
+}
+section{
+  background:rgba(15,23,42,.88);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,.28);
+}
+h2{font-size:16px;margin:0 0 12px}
+button{
+  width:100%;
+  padding:11px;
+  border-radius:13px;
+  border:1px solid var(--line);
+  background:linear-gradient(180deg,#1f2d48,#111827);
+  color:var(--text);
+  cursor:pointer;
+  margin-top:10px;
+  font-weight:800;
+}
+button:hover{border-color:white}
+.metrics{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-bottom:14px;
+}
+.card{
+  background:linear-gradient(180deg,#172033,#101827);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+}
+.metric{font-size:24px;font-weight:900}
+.muted{color:var(--muted);font-size:13px}
+.dualWrap{
+  position:relative;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:48px;
+  padding:18px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;
+  background:radial-gradient(circle at center, rgba(255,255,255,.04), rgba(0,0,0,.16));
+}
+.gridBlock h3{
+  margin:0 0 10px;
+  color:var(--muted);
+  font-size:14px;
+}
+.grid6x4{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:8px;
+}
+.cell{
+  aspect-ratio:1;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+  transition:.15s ease;
+}
+.cell:hover{transform:translateY(-2px) scale(1.03);filter:brightness(1.15)}
+.cell::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at 35% 25%, rgba(255,255,255,.28), transparent 34%);
+}
+.cell span{position:relative;z-index:2;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.carbonBest{outline:3px solid var(--carbon);box-shadow:0 0 22px rgba(147,197,253,.8);animation:pulse 1.4s infinite}
+.siliconBest{outline:3px solid var(--silicon);box-shadow:0 0 22px rgba(134,239,172,.8);animation:pulse 1.4s infinite}
+.selected{outline:3px solid white}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04);filter:brightness(1.35)}}
+.svgLayer{
+  position:absolute;
+  inset:18px;
+  width:calc(100% - 36px);
+  height:calc(100% - 36px);
+  pointer-events:none;
+}
+pre{
+  white-space:pre-wrap;
+  background:#070914;
+  border:1px solid var(--line);
+  padding:12px;
+  border-radius:12px;
+  max-height:340px;
+  overflow:auto;
+  font-size:12px;
+}
+.trailItem{
+  display:flex;
+  justify-content:space-between;
+  border-bottom:1px solid var(--line);
+  padding:8px 0;
+  font-size:13px;
+}
+.barRow{margin:10px 0}
+.barLabel{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px}
+.barTrack{height:9px;border-radius:999px;background:#0b1020;border:1px solid var(--line);overflow:hidden}
+.barFill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--carbon),var(--silicon))}
+@media(max-width:1200px){main{grid-template-columns:1fr}.dualWrap{grid-template-columns:1fr;gap:22px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Game Theory Core Engine v1.8</h1>
+  <div class="sub">Dual grid runtime: { [6x4, 6x4] } — Carbon pressure surface converges with Silicon response surface.</div>
+</header>
+
+<main>
+<section>
+  <h2>Controls</h2>
+  <button onclick="step()">Run 1 Tick</button>
+  <button onclick="autoRun()">Auto Pulse ×8</button>
+  <button onclick="rebuild()">Rebuild Dual Grid</button>
+  <button onclick="resetRuntime()">Reset Runtime</button>
+
+  <h2 style="margin-top:20px">Shape</h2>
+  <pre>{ [6x4, 6x4] }
+
+Left:
+Carbon grid
+context × intent
+
+Right:
+Silicon grid
+reason × safety
+
+Bridge:
+best carbon cell
++
+best silicon cell
+=
+converged pair</pre>
+</section>
+
+<section>
+  <h2>Dual 6×4 Grid</h2>
+  <div class="metrics">
+    <div class="card"><div class="metric" id="tick">0</div><div class="muted">Tick</div></div>
+    <div class="card"><div class="metric" id="bestPair">-</div><div class="muted">Best pair</div></div>
+    <div class="card"><div class="metric" id="bestScore">0</div><div class="muted">Convergence score</div></div>
+    <div class="card"><div class="metric">48</div><div class="muted">Visible cells</div></div>
+  </div>
+
+  <div class="dualWrap" id="dualWrap">
+    <svg id="svgLayer" class="svgLayer"></svg>
+    <div class="gridBlock">
+      <h3>Carbon Grid [6×4]</h3>
+      <div id="carbonGrid" class="grid6x4"></div>
+    </div>
+    <div class="gridBlock">
+      <h3>Silicon Grid [6×4]</h3>
+      <div id="siliconGrid" class="grid6x4"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Pair Inspector</h2>
+  <pre id="inspector"></pre>
+
+  <h2>Convergence Features</h2>
+  <div id="bars"></div>
+
+  <h2 style="margin-top:20px">Trail</h2>
+  <div id="trail"></div>
+</section>
+</main>
+
+<script>
+let runtime;
+let selectedPair;
+
+function scoreCarbon(f){
+  return f.context*1.0 + f.intent*1.0 + f.continuity*2.0 - f.risk*1.2;
+}
+
+function scoreSilicon(f){
+  return f.reason*1.1 + f.execute*1.4 + f.safety*2.0 + f.format*1.0;
+}
+
+function buildCells(){
+  const carbon = [];
+  const silicon = [];
+
+  for(let y=0;y<4;y++){
+    for(let x=0;x<6;x++){
+      const carbon_pressure = x/5;
+      const carbon_context = y/3;
+      const cf = {
+        context: carbon_context,
+        intent: carbon_pressure,
+        continuity: Math.max(0,1-Math.abs(carbon_pressure-.45)),
+        risk: carbon_context*(1-carbon_pressure)
+      };
+      carbon.push({side:"carbon", id:`C${x}${y}`, x,y, features:cf, score:scoreCarbon(cf)});
+
+      const silicon_response = x/5;
+      const silicon_safety = y/3;
+      const sf = {
+        reason: silicon_response,
+        execute: Math.max(0,1-Math.abs(silicon_response-.70)),
+        safety: silicon_safety,
+        format: Math.max(0,1-Math.abs(silicon_safety-.55))
+      };
+      silicon.push({side:"silicon", id:`S${x}${y}`, x,y, features:sf, score:scoreSilicon(sf)});
+    }
+  }
+
+  const pairs = [];
+  for(const c of carbon){
+    for(const s of silicon){
+      const balance = 1 - Math.abs(c.score-s.score) / Math.max(c.score,s.score,1);
+      const safety_bias = s.features.safety;
+      const continuity = c.features.continuity;
+      const convergence_score = c.score + s.score + balance*2 + safety_bias + continuity;
+      pairs.push({
+        id:`${c.id}|${s.id}`,
+        carbon:c,
+        silicon:s,
+        score:convergence_score,
+        features:{
+          carbon_score:c.score,
+          silicon_score:s.score,
+          balance,
+          safety_bias,
+          continuity
+        }
+      });
+    }
+  }
+
+  return {carbon,silicon,pairs};
+}
+
+function bestPair(){
+  return [...runtime.pairs].sort((a,b)=>b.score-a.score)[0];
+}
+
+function resetRuntime(){
+  const built = buildCells();
+  runtime = {tick:0, ...built, trail:[]};
+  selectedPair = bestPair();
+  render();
+}
+
+function rebuild(){
+  const built = buildCells();
+  runtime = {...runtime, ...built};
+  selectedPair = bestPair();
+  render();
+}
+
+function step(){
+  runtime.tick += 1;
+  const built = buildCells();
+  runtime.carbon = built.carbon;
+  runtime.silicon = built.silicon;
+  runtime.pairs = built.pairs;
+  selectedPair = bestPair();
+  runtime.trail.push({
+    tick:runtime.tick,
+    selected_pair:selectedPair.id,
+    score:selectedPair.score,
+    carbon:selectedPair.carbon.id,
+    silicon:selectedPair.silicon.id
+  });
+  render();
+}
+
+function autoRun(){
+  let n=0;
+  const timer=setInterval(()=>{
+    step();
+    n++;
+    if(n>=8) clearInterval(timer);
+  },420);
+}
+
+function shade(cell, side){
+  const list = side === "carbon" ? runtime.carbon : runtime.silicon;
+  const scores = list.map(c=>c.score);
+  const min = Math.min(...scores);
+  const max = Math.max(...scores);
+  const t = (cell.score-min)/(max-min || 1);
+  if(side === "carbon") return `rgba(147,197,253,${.22+t*.68})`;
+  return `rgba(134,239,172,${.22+t*.68})`;
+}
+
+function drawGrid(target, cells, side){
+  target.innerHTML = "";
+  for(let y=3;y>=0;y--){
+    for(let x=0;x<6;x++){
+      const c = cells.find(k=>k.x===x && k.y===y);
+      const div = document.createElement("div");
+      div.className = "cell";
+      if(side==="carbon" && c.id===selectedPair.carbon.id) div.classList.add("carbonBest");
+      if(side==="silicon" && c.id===selectedPair.silicon.id) div.classList.add("siliconBest");
+      div.style.background = shade(c,side);
+      div.innerHTML = `<span>${c.id}<br>${c.score.toFixed(1)}</span>`;
+      div.onclick = () => {
+        if(side==="carbon"){
+          selectedPair = runtime.pairs.find(p=>p.carbon.id===c.id && p.silicon.id===selectedPair.silicon.id) || selectedPair;
+        } else {
+          selectedPair = runtime.pairs.find(p=>p.carbon.id===selectedPair.carbon.id && p.silicon.id===c.id) || selectedPair;
+        }
+        render();
+      };
+      target.appendChild(div);
+    }
+  }
+}
+
+function drawLink(){
+  const svg = document.getElementById("svgLayer");
+  svg.innerHTML = "";
+  const wrap = document.getElementById("dualWrap").getBoundingClientRect();
+  svg.setAttribute("viewBox", `0 0 ${wrap.width-36} ${wrap.height-36}`);
+
+  const carbonEls = [...document.querySelectorAll("#carbonGrid .cell")];
+  const siliconEls = [...document.querySelectorAll("#siliconGrid .cell")];
+  const cIndex = runtime.carbon.findIndex(c=>c.id===selectedPair.carbon.id);
+  const sIndex = runtime.silicon.findIndex(s=>s.id===selectedPair.silicon.id);
+
+  // rendered order is y reversed, so locate by visible text instead
+  const cEl = carbonEls.find(e=>e.textContent.includes(selectedPair.carbon.id));
+  const sEl = siliconEls.find(e=>e.textContent.includes(selectedPair.silicon.id));
+  if(!cEl || !sEl) return;
+
+  const base = document.getElementById("dualWrap").getBoundingClientRect();
+  const cr = cEl.getBoundingClientRect();
+  const sr = sEl.getBoundingClientRect();
+
+  const x1 = cr.left - base.left + cr.width/2 - 18;
+  const y1 = cr.top - base.top + cr.height/2 - 18;
+  const x2 = sr.left - base.left + sr.width/2 - 18;
+  const y2 = sr.top - base.top + sr.height/2 - 18;
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+  line.setAttribute("x1",x1);
+  line.setAttribute("y1",y1);
+  line.setAttribute("x2",x2);
+  line.setAttribute("y2",y2);
+  line.setAttribute("stroke","rgba(254,240,138,.75)");
+  line.setAttribute("stroke-width","4");
+  line.setAttribute("stroke-linecap","round");
+  svg.appendChild(line);
+}
+
+function renderBars(){
+  const bars = document.getElementById("bars");
+  bars.innerHTML = "";
+  const maxVals = {carbon_score:5, silicon_score:6, balance:1, safety_bias:1, continuity:1};
+
+  for(const [k,v] of Object.entries(selectedPair.features)){
+    const pct = Math.max(0,Math.min(100,(v/(maxVals[k]||1))*100));
+    const row = document.createElement("div");
+    row.className="barRow";
+    row.innerHTML = `
+      <div class="barLabel"><span>${k}</span><span>${v.toFixed(3)}</span></div>
+      <div class="barTrack"><div class="barFill" style="width:${pct}%"></div></div>
+    `;
+    bars.appendChild(row);
+  }
+}
+
+function render(){
+  const best = bestPair();
+  document.getElementById("tick").textContent = runtime.tick;
+  document.getElementById("bestPair").textContent = best.id;
+  document.getElementById("bestScore").textContent = best.score.toFixed(2);
+
+  drawGrid(document.getElementById("carbonGrid"), runtime.carbon, "carbon");
+  drawGrid(document.getElementById("siliconGrid"), runtime.silicon, "silicon");
+
+  document.getElementById("inspector").textContent = JSON.stringify(selectedPair,null,2);
+  renderBars();
+
+  const trail = document.getElementById("trail");
+  trail.innerHTML = "";
+  for(const item of runtime.trail.slice(-12).reverse()){
+    const div = document.createElement("div");
+    div.className = "trailItem";
+    div.innerHTML = `<span>T${item.tick} ${item.selected_pair}</span><strong>${item.score.toFixed(2)}</strong>`;
+    trail.appendChild(div);
+  }
+
+  requestAnimationFrame(drawLink);
+}
+
+window.addEventListener("resize",()=>requestAnimationFrame(drawLink));
+resetRuntime();
+</script>
+</body>
+</html>
