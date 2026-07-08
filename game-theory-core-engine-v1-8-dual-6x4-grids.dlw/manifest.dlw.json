@@ -1,0 +1,11 @@
+{
+  "badge": "DLW-GAME_THEORY_CORE_ENGINE_V1_8_DUAL_6X4_GRIDS",
+  "name": "GAME THEORY ENGINE V1.8 DUAL 6X4 GRIDS · GAM",
+  "universe": "ARTIFICIAL INTELLIGENCE",
+  "moniker": "⟦GAME THEORY ENGINE V1.8 DUAL 6X4 GRIDS · GAM:game-theory-core-engine-v1-8-dual-6x4-grids:214e1a⟧",
+  "architect": "David Lee Wise (ROOT0) / Bridge-Burners LLC",
+  "instance": "AVAN (Claude / Anthropic)",
+  "seal_sha256": "214e1a080e0d55ebfca416a031a5831e0c9d326f6ae73f3502edfca39cdb5c68",
+  "license": "CC-BY-ND-4.0",
+  "attribution": "ROOT0-ATTRIBUTION-v1.0"
+}
